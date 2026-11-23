@@ -74,17 +74,29 @@ async def post_omdome(vin_id: uuid.UUID, body: dict = Body(...), kalla: str = De
 # For the voice agent: name the wine in words instead of an id.
 @app.post("/api/v1/drack")
 async def post_drack_fras(body: dict = Body(...), kalla: str = Depends(auth.kalla)):
-    """{"vin": "barolon från 2016", "betyg": 4, "kommentar": "...", "mat": "..."} – en flaska mindre (och ett omdöme)."""
-    v = await kallare.hitta(str(body.get("vin") or ""))
-    return await kallare.drack(v["id"], body, kalla)
+    """{"vin": "barolon från 2016", "betyg": 4, "kommentar": "...", "mat": "..."} – en flaska mindre (och ett omdöme).
+    Med betyg och ett vin som inte finns i källaren läggs vinet till med 0 flaskor (ur sortimentet om det hittas)."""
+    fras = str(body.get("vin") or "")
+    if body.get("betyg") in (None, ""):
+        v = await kallare.hitta(fras)
+        return await kallare.drack(v["id"], body, kalla)
+    v, nytt = await kallare.hitta_eller_skapa(fras)
+    out = await kallare.drack(v["id"], body, kalla)
+    if nytt:
+        out["nytt_vin"] = f"Fanns inte i källaren; lades till (0 flaskor) från {nytt}"
+    return out
 
 
 @app.post("/api/v1/omdome")
 async def post_omdome_fras(body: dict = Body(...), kalla: str = Depends(auth.kalla)):
-    """{"vin": "...", "betyg": 1-5, "kommentar": "...", "mat": "..."} – omdöme utan att räkna ner antalet."""
-    v = await kallare.hitta(str(body.get("vin") or ""))
+    """{"vin": "...", "betyg": 1-5, "kommentar": "...", "mat": "..."} – omdöme utan att räkna ner antalet. Ett vin som inte
+    finns i källaren (present, restaurang) läggs till med 0 flaskor, ur sortimentet om det hittas, annars med namnet."""
+    v, nytt = await kallare.hitta_eller_skapa(str(body.get("vin") or ""))
     saved = await kallare.omdome(v["id"], body, kalla)
-    return {"vin": v["visningsnamn"], "omdome": saved}
+    out = {"vin": v["visningsnamn"], "omdome": saved}
+    if nytt:
+        out["nytt_vin"] = f"Fanns inte i källaren; lades till (0 flaskor) från {nytt}"
+    return out
 
 
 # ── Sortimentet och etiketter ──────────────────────────────────────────────

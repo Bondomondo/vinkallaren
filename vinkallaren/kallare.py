@@ -103,7 +103,7 @@ async def hitta(fras: str) -> dict:
 
 async def lagg_till(body: dict) -> dict:
     """Add bottles: from the assortment (artikelnr) or by hand (namn ...). Same wine and vintage adds to the count."""
-    antal = int(body.get("antal") or 1)
+    antal = int(body["antal"]) if body.get("antal") not in (None, "") else 1
     if antal < 0 or antal > 500:
         raise HTTPException(400, "Antal måste vara 0–500")
     argang = str(body.get("argang") or "").strip() or None
@@ -176,3 +176,20 @@ async def drack(vin_id: str, body: dict, kalla: str) -> dict:
     out = await vin(vin_id)
     out["registrerat"] = {"flaska_drucken": v["antal"] > 0, "omdome": saved}
     return out
+
+
+async def hitta_eller_skapa(fras: str) -> tuple[dict, str | None]:
+    """For a review of a wine that is not in the cellar (a gift, a restaurant bottle): add it with no bottles,
+    from the assortment when the phrase matches a wine there well, otherwise by name. Returns (wine, how it was added)."""
+    try:
+        return await hitta(fras), None
+    except HTTPException as exc:
+        if exc.status_code != 404:
+            raise
+    traffar = await katalog.sok(fras, None, 3)
+    if traffar and traffar[0]["likhet"] >= 0.6 and (len(traffar) == 1 or traffar[0]["likhet"] - traffar[1]["likhet"] >= 0.1
+                                                     or traffar[0]["namn"] == traffar[1]["namn"]):
+        v = await lagg_till({"artikelnr": traffar[0]["artikelnr"], "antal": 0})
+        return v, "Systembolaget"
+    v = await lagg_till({"namn": " ".join(fras.split())[:120], "antal": 0})
+    return v, "manuellt"

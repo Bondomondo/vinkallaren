@@ -63,8 +63,8 @@ def test_spoken_wine_names(client, sortiment):
     a = client.post("/api/v1/viner", json={"artikelnr": "1001", "antal": 2}, headers=APP).json()
     client.post("/api/v1/viner", json={"artikelnr": "1001", "argang": "2017", "antal": 1}, headers=APP)
     client.post("/api/v1/viner", json={"artikelnr": "1002", "antal": 1}, headers=APP)
-    r = client.post("/api/v1/drack", json={"vin": "chablisen", "betyg": 4}, headers=AGENT)
-    assert r.status_code == 404  # "chablisen" is not a word in the name
+    r = client.post("/api/v1/drack", json={"vin": "chablisen"}, headers=AGENT)
+    assert r.status_code == 404  # "chablisen" is not a word in the name, and without a rating nothing is added
     r = client.post("/api/v1/drack", json={"vin": "Chablis", "betyg": 4, "kommentar": "frisk"}, headers=AGENT).json()
     assert r["antal"] == 0 and r["omdomen"][0]["kalla"] == "agent"
     r = client.post("/api/v1/drack", json={"vin": "barolo"}, headers=AGENT)
@@ -216,3 +216,18 @@ def test_pairing_from_serving_advice():
     rec = {"productNumber": "1", "productNameBold": "X", "categoryLevel1": "Vin", "categoryLevel2": "Rött vin", "usage": "Serveras till rätter av lammkött."}
     assert normalisera(rec)["passar_till"] == ["Lamm"]
     assert normalisera({**rec, "tasteSymbols": ["Nöt"]})["passar_till"] == ["Nöt"]
+
+
+def test_review_of_wine_not_in_cellar(client, sortiment):
+    # A gift bottle that Systembolaget sells: added from the assortment with no bottles
+    r = client.post("/api/v1/omdome", json={"vin": "Muga Rioja Reserva", "betyg": 4, "kommentar": "present"}, headers=AGENT).json()
+    assert r["vin"] == "Muga Rioja Reserva 2020" and "Systembolaget" in r["nytt_vin"] and r["omdome"]["betyg"] == 4
+    k = client.get("/api/v1/kallaren", params={"alla": "true"}, headers=APP).json()["viner"]
+    assert k[0]["artikelnr"] == "1006" and k[0]["antal"] == 0 and k[0]["passar_till"] == ["Lamm", "Nöt"]
+    # The same wine again is found, not added twice
+    r = client.post("/api/v1/omdome", json={"vin": "muga rioja", "betyg": 5}, headers=AGENT).json()
+    assert "nytt_vin" not in r and len(client.get("/api/v1/kallaren", params={"alla": "true"}, headers=APP).json()["viner"]) == 1
+    # Unknown everywhere: added by name; drinking it with a rating works the same way
+    r = client.post("/api/v1/drack", json={"vin": "Grannens äppelvin", "betyg": 2}, headers=AGENT).json()
+    assert r["visningsnamn"] == "Grannens äppelvin" and r["antal"] == 0 and "manuellt" in r["nytt_vin"] and r["snittbetyg"] == 2
+    assert client.get("/api/v1/profil", headers=APP).json()["underlag"] == "omdömen"
