@@ -5,6 +5,7 @@ of the assortment (config.KATALOG_KALLOR, first one that answers). The file is l
 it is streamed to /tmp and parsed item by item; only wines are kept.
 """
 import os
+import re
 import tempfile
 import time
 from datetime import datetime
@@ -35,6 +36,25 @@ def _clock(p: dict, key: str) -> int | None:
             if c.get("key") == f"TasteClock{key}":
                 v = c.get("value")
     return int(v) if isinstance(v, (int, float)) and v > 0 else None
+
+
+# Systembolaget's serving advice ("Serveras vid 16°C till rätter av lamm- eller nötkött") → its pairing
+# categories, for mirrors that leave out the tasteSymbols field.
+ANVANDNING = [
+    ("Lamm", r"lamm"), ("Nöt", r"nöt|mörkt kött|biff|kalv|oxfilé|entrecôte|grillat kött"), ("Fläsk", r"fläsk|gris|ljust kött|kallskuret|korv|skinka"),
+    ("Fågel", r"fågel|kyckling|ljust kött|anka|kalkon"), ("Vilt", r"vilt|älg|hjort|rådjur|vildsvin|ren"),
+    ("Fisk", r"fisk|lax|torsk"), ("Skaldjur", r"skaldjur|räk|musslor|ostron|hummer|kräft"),
+    ("Grönsaker", r"vegetari|grönsak|svamp|sallad"), ("Ost", r"ost(?!ron)"), ("Dessert", r"dessert|efterrätt|choklad|bakverk|tårta"),
+    ("Asiatiskt", r"asiatisk|thai|kinesisk|indisk|sushi"), ("Kryddstarkt", r"kryddstark|kryddig|het mat|chili"),
+    ("Aperitif", r"aperitif|fördrink"), ("Sällskapsdryck", r"sällskapsdryck|sällskap"), ("Buffémat", r"buffé|småplock|plockmat|tapas"),
+]
+
+
+def kategorier_ur_text(text: str | None) -> list[str]:
+    low = (text or "").lower()
+    if "till" not in low and "som" not in low:
+        return []
+    return [kat for kat, pat in ANVANDNING if re.search(rf"(?<![a-zåäö])(?:{pat})", low)]
 
 
 def _image(p: dict) -> str | None:
@@ -72,7 +92,7 @@ def normalisera(p: dict) -> dict | None:
         "farg": p.get("color"),
         "smak": p.get("taste"),
         "anvandning": p.get("usage"),
-        "passar_till": [s for s in (p.get("tasteSymbols") or []) if isinstance(s, str)],
+        "passar_till": [s for s in (p.get("tasteSymbols") or []) if isinstance(s, str)] or kategorier_ur_text(p.get("usage")),
         "fyllighet": _clock(p, "Body"),
         "stravhet": _clock(p, "Roughness"),
         "fruktsyra": _clock(p, "Fruitacid"),

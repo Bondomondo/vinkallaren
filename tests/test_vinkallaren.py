@@ -204,3 +204,15 @@ def test_catalogue_sync(client, fake, monkeypatch):
     assert client.get("/api/v1/katalog/sok", params={"q": "ceretto barolo"}, headers=APP).json()["traffar"][0]["artikelnr"] == "1001"
     assert client.get("/api/v1/katalog/1001", headers=APP).json()["producent"] == "Ceretto"
     assert client.get("/api/v1/katalog/9", headers=APP).status_code == 404
+
+
+def test_pairing_from_serving_advice():
+    from vinkallaren.katalog import kategorier_ur_text, normalisera
+    assert kategorier_ur_text("Serveras vid 16-18°C till smakrika vegetariska rätter eller till rätter av fläsk- eller lammkött, exempelvis pizza.") == ["Lamm", "Fläsk", "Grönsaker"]
+    assert kategorier_ur_text("Serveras vid cirka 16°C till vegetariskt eller till rätter av ljust kött, gärna kallskuret och småplock eller till en buffé.") == ["Fläsk", "Fågel", "Grönsaker", "Buffémat"]
+    assert kategorier_ur_text("Serveras vid 8-10°C som aperitif eller till fisk och skaldjur.") == ["Fisk", "Skaldjur", "Aperitif"]
+    assert kategorier_ur_text("Serveras till ostron och ost.") == ["Skaldjur", "Ost"]
+    assert kategorier_ur_text(None) == [] and kategorier_ur_text("Fruktig smak") == []
+    rec = {"productNumber": "1", "productNameBold": "X", "categoryLevel1": "Vin", "categoryLevel2": "Rött vin", "usage": "Serveras till rätter av lammkött."}
+    assert normalisera(rec)["passar_till"] == ["Lamm"]
+    assert normalisera({**rec, "tasteSymbols": ["Nöt"]})["passar_till"] == ["Nöt"]
