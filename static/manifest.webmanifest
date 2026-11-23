@@ -1,0 +1,9 @@
+{
+  "name": "Vinkällaren",
+  "short_name": "Vinkällaren",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf7f2",
+  "theme_color": "#5b1a2b",
+  "icons": [{ "src": "/ikon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

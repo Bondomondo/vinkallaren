@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vinkällaren</title>
+<meta name="theme-color" content="#5b1a2b">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/ikon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/ikon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Vinkällaren">
+<style>
+:root {
+  --bg: #faf7f2; --kort: #ffffff; --text: #1f1a17; --dim: #6f655d; --linje: #e6ded3;
+  --vin: #5b1a2b; --vin-ljus: #f3e7ea; --guld: #b8862f; --fel: #a3261f;
+  --rott: #7a1f33; --vitt: #d9c46a; --rose: #e59aa8; --mouss: #c9b98a; --stark: #6b3b1f;
+  --radie: 14px; --skugga: 0 1px 2px rgba(0,0,0,.06), 0 4px 14px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #151213; --kort: #201b1c; --text: #f1ebe6; --dim: #a89d95; --linje: #352d2e; --vin: #d27a8f; --vin-ljus: #3a2329; --skugga: none; }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { margin: 0; font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text);
+       padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+header { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: calc(10px + env(safe-area-inset-top)) 16px 8px; border-bottom: 1px solid var(--linje); }
+h1 { margin: 0; font-size: 22px; letter-spacing: .2px; }
+h1 span { color: var(--dim); font-weight: 400; font-size: 15px; margin-left: 6px; }
+h2 { font-size: 17px; margin: 22px 0 10px; }
+main { padding: 12px 16px; max-width: 720px; margin: 0 auto; }
+nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: var(--kort); border-top: 1px solid var(--linje);
+      padding-bottom: env(safe-area-inset-bottom); z-index: 10; }
+nav button { flex: 1; border: 0; background: none; padding: 10px 0 9px; font: inherit; font-size: 12px; color: var(--dim); display: flex; flex-direction: column; align-items: center; gap: 2px; }
+nav button svg { width: 24px; height: 24px; }
+nav button.aktiv { color: var(--vin); font-weight: 600; }
+.sok { display: flex; gap: 8px; margin: 10px 0 0; }
+input, textarea, select { width: 100%; font: inherit; color: var(--text); background: var(--kort); border: 1px solid var(--linje); border-radius: 10px; padding: 10px 12px; }
+textarea { min-height: 70px; resize: vertical; }
+.chips { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 2px; scrollbar-width: none; }
+.chip { white-space: nowrap; border: 1px solid var(--linje); background: var(--kort); color: var(--text); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 14px; }
+.chip.aktiv { background: var(--vin); border-color: var(--vin); color: #fff; }
+.kort { background: var(--kort); border-radius: var(--radie); box-shadow: var(--skugga); border: 1px solid var(--linje); padding: 12px; margin: 10px 0; }
+.vin { display: flex; gap: 12px; align-items: center; cursor: pointer; }
+.thumb { width: 46px; height: 62px; border-radius: 8px; flex: none; object-fit: cover; background: var(--vin-ljus); display: grid; place-items: center; }
+.thumb i { width: 14px; height: 40px; border-radius: 7px 7px 4px 4px; display: block; }
+.vin .info { flex: 1; min-width: 0; }
+.vin .namn { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.dim { color: var(--dim); font-size: 14px; }
+.antal { display: flex; align-items: center; gap: 6px; }
+.antal b { min-width: 22px; text-align: center; font-variant-numeric: tabular-nums; }
+.rund { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--linje); background: var(--kort); color: var(--text); font-size: 18px; line-height: 1; }
+.knapp { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 12px; padding: 12px 16px; font: inherit; font-weight: 600;
+         background: var(--vin); color: #fff; width: 100%; }
+.knapp.sek { background: var(--vin-ljus); color: var(--vin); }
+.knapp:disabled { opacity: .55; }
+.rad { display: flex; gap: 8px; }
+.rad > * { flex: 1; }
+.stjarnor { display: flex; gap: 4px; }
+.stjarnor button { border: 0; background: none; font-size: 30px; color: var(--linje); padding: 0 2px; }
+.stjarnor button.pa { color: var(--guld); }
+.betyg { color: var(--guld); font-size: 13px; letter-spacing: 1px; }
+.taggar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.tagg { font-size: 12px; background: var(--vin-ljus); color: var(--vin); border-radius: 999px; padding: 3px 9px; }
+.klocka { display: grid; grid-template-columns: 90px 1fr 24px; gap: 8px; align-items: center; font-size: 14px; margin: 4px 0; }
+.stapel { height: 6px; border-radius: 3px; background: var(--linje); overflow: hidden; }
+.stapel i { display: block; height: 100%; background: var(--vin); }
+.tom { text-align: center; color: var(--dim); padding: 40px 10px; }
+.fel { color: var(--fel); }
+dialog { border: 0; border-radius: 18px 18px 0 0; padding: 0; width: 100%; max-width: 720px; margin: auto auto 0; max-height: 92vh; background: var(--bg); color: var(--text); }
+dialog::backdrop { background: rgba(0,0,0,.45); }
+.blad { padding: 16px 16px calc(20px + env(safe-area-inset-bottom)); overflow-y: auto; max-height: 92vh; }
+.blad .stang { float: right; border: 0; background: var(--vin-ljus); color: var(--vin); width: 32px; height: 32px; border-radius: 50%; font-size: 18px; }
+.etikett { width: 100%; max-height: 260px; object-fit: contain; border-radius: 12px; background: var(--vin-ljus); }
+.kandidat { display: flex; gap: 10px; align-items: center; padding: 10px; border: 1px solid var(--linje); border-radius: 12px; margin: 8px 0; background: var(--kort); cursor: pointer; }
+.kandidat.vald { border-color: var(--vin); box-shadow: 0 0 0 2px var(--vin) inset; }
+.kandidat img { width: 36px; height: 54px; object-fit: contain; }
+.skal { font-size: 13px; color: var(--dim); margin: 4px 0 0 0; padding-left: 18px; }
+.laddar { display: inline-block; width: 18px; height: 18px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: snurr .8s linear infinite; }
+@keyframes snurr { to { transform: rotate(360deg); } }
+.toast { position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--text); color: var(--bg);
+         padding: 10px 16px; border-radius: 999px; font-size: 14px; z-index: 50; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.toast.syns { opacity: 1; }
+label.falt { display: block; font-size: 13px; color: var(--dim); margin: 10px 0 4px; }
+.dold { display: none !important; }
+</style>
+</head>
+<body>
+<header><h1>Vinkällaren <span id="summering"></span></h1></header>
+<main id="vy"></main>
+<nav>
+  <button data-vy="kallaren" class="aktiv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 2h4M11 2v5c0 1-2 2-2 5v9a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-9c0-3-2-4-2-5V2"/></svg>Källaren</button>
+  <button data-vy="lagg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.5"/><path d="M9 6l1.5-2h3L15 6"/></svg>Lägg till</button>
+  <button data-vy="tips"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>Tips</button>
+</nav>
+<dialog id="dialog"><div class="blad" id="blad"></div></dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const TYPER = ["Rött vin", "Vitt vin", "Rosévin", "Mousserande vin", "Starkvin"];
+const FARG = {"Rött vin": "var(--rott)", "Vitt vin": "var(--vitt)", "Rosévin": "var(--rose)", "Mousserande vin": "var(--mouss)", "Starkvin": "var(--stark)"};
+const KLOCKOR = [["fyllighet", "Fyllighet"], ["stravhet", "Strävhet"], ["fruktsyra", "Fruktsyra"], ["sotma", "Sötma"]];
+let kod = null;
+try { kod = localStorage.getItem("familjkod"); } catch (e) {}
+const state = { vy: "kallaren", typ: null, sok: "", viner: [] };
+
+function toast(text) {
+  const t = $("#toast"); t.textContent = text; t.classList.add("syns");
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.remove("syns"), 2600);
+}
+
+async function api(path, opts = {}) {
+  const headers = Object.assign({"X-Familj-Kod": kod || ""}, opts.headers || {});
+  if (opts.json !== undefined) { headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(opts.json); }
+  const r = await fetch("/api/v1" + path, Object.assign({}, opts, {headers}));
+  if (r.status === 401) { fragaKod(true); throw new Error("Fel familjekod"); }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || ("Fel " + r.status));
+  return data;
+}
+
+function fragaKod(fel) {
+  visa(`<div class="kort"><h2 style="margin-top:0">Välkommen</h2>
+    <p class="dim">Skriv familjens kod för att öppna vinkällaren. Den sparas på den här telefonen.</p>
+    ${fel ? '<p class="fel">Koden stämde inte.</p>' : ""}
+    <input id="kod" type="password" autocomplete="current-password" placeholder="Familjekod">
+    <p><button class="knapp" id="spara-kod">Öppna</button></p></div>`);
+  $("#spara-kod").onclick = () => {
+    kod = $("#kod").value.trim();
+    try { localStorage.setItem("familjkod", kod); } catch (e) {}
+    gaTill("kallaren");
+  };
+}
+
+function visa(html) { $("#vy").innerHTML = html; }
+function stjarnor(b) { if (!b) return ""; const n = Math.round(b); return `<span class="betyg">${"★".repeat(n)}${"☆".repeat(5 - n)}</span>`; }
+function thumb(v) {
+  return v.etikett_url ? `<img class="thumb" src="${esc(v.etikett_url)}" alt="">` :
+    `<div class="thumb"><i style="background:${FARG[v.typ] || "var(--vin)"}"></i></div>`;
+}
+function ursprung(v) { return [v.region, v.land].filter(Boolean).join(", "); }
+
+// ── Källaren ───────────────────────────────────────────────────────────────
+async function kallaren() {
+  visa(`<div class="sok"><input id="sok" type="search" placeholder="Sök namn, druva, region …" value="${esc(state.sok)}"></div>
+    <div class="chips">${["Alla", ...TYPER].map(t => `<button class="chip ${(t === "Alla" ? !state.typ : state.typ === t) ? "aktiv" : ""}" data-typ="${t}">${t}</button>`).join("")}</div>
+    <div id="lista"><p class="tom"><span class="laddar"></span></p></div>`);
+  $("#sok").oninput = e => { state.sok = e.target.value; ritaLista(); };
+  document.querySelectorAll("[data-typ]").forEach(b => b.onclick = () => { state.typ = b.dataset.typ === "Alla" ? null : b.dataset.typ; kallaren(); });
+  try {
+    const d = await api("/kallaren?bilder=true");
+    state.viner = d.viner;
+    $("#summering").textContent = `${d.flaskor} flaskor`;
+    ritaLista();
+  } catch (e) { $("#lista").innerHTML = `<p class="tom fel">${esc(e.message)}</p>`; }
+}
+
+function ritaLista() {
+  const q = state.sok.toLowerCase().split(/\s+/).filter(Boolean);
+  const rows = state.viner.filter(v => (!state.typ || v.typ === state.typ) &&
+    q.every(w => [v.visningsnamn, v.region, v.land, (v.druvor || []).join(" ")].join(" ").toLowerCase().includes(w)));
+  if (!state.viner.length) { $("#lista").innerHTML = `<div class="tom">Källaren är tom.<br><br><button class="knapp" onclick="gaTill('lagg')">Lägg till första flaskan</button></div>`; return; }
+  if (!rows.length) { $("#lista").innerHTML = `<p class="tom">Inget vin matchar.</p>`; return; }
+  $("#lista").innerHTML = rows.map(v => `<div class="kort vin" data-id="${v.id}">${thumb(v)}
+    <div class="info"><div class="namn">${esc(v.visningsnamn)}</div>
+      <div class="dim">${esc([v.typ, ursprung(v)].filter(Boolean).join(" · "))}</div>
+      <div class="dim">${esc((v.druvor || []).join(", "))} ${stjarnor(v.snittbetyg)}</div></div>
+    <div class="antal"><button class="rund" data-minus="${v.id}" aria-label="En mindre">−</button><b>${v.antal}</b><button class="rund" data-plus="${v.id}" aria-label="En till">+</button></div></div>`).join("");
+  document.querySelectorAll("[data-id]").forEach(el => el.onclick = e => { if (!e.target.closest("button")) visaVin(el.dataset.id); });
+  document.querySelectorAll("[data-plus]").forEach(b => b.onclick = () => andraAntal(b.dataset.plus, +1));
+  document.querySelectorAll("[data-minus]").forEach(b => b.onclick = () => drackDialog(b.dataset.minus));
+}
+
+async function andraAntal(id, delta) {
+  const v = state.viner.find(x => x.id === id); if (!v) return;
+  try { await api(`/viner/${id}`, {method: "PATCH", json: {antal: Math.max(0, v.antal + delta)}}); kallaren(); }
+  catch (e) { toast(e.message); }
+}
+
+function oppna(html) { $("#blad").innerHTML = `<button class="stang" onclick="stang()" aria-label="Stäng">×</button>` + html; $("#dialog").showModal(); }
+function stang() { $("#dialog").close(); }
+
+async function visaVin(id) {
+  oppna(`<p class="tom"><span class="laddar"></span></p>`);
+  try {
+    const v = await api(`/viner/${id}`);
+    const klockor = KLOCKOR.filter(([k]) => v[k]).map(([k, n]) => `<div class="klocka"><span>${n}</span><div class="stapel"><i style="width:${v[k] * 100 / 12}%"></i></div><span class="dim">${v[k]}</span></div>`).join("");
+    oppna(`${v.etikett_url ? `<img class="etikett" src="${esc(v.etikett_url)}" alt="Etikett">` : ""}
+      <h2>${esc(v.visningsnamn)}</h2>
+      <div class="dim">${esc([v.typ, ursprung(v), v.pris ? `${Math.round(v.pris)} kr` : ""].filter(Boolean).join(" · "))}</div>
+      <div class="dim">${esc((v.druvor || []).join(", "))}</div>
+      ${v.passar_till?.length ? `<div class="taggar">${v.passar_till.map(t => `<span class="tagg">${esc(t)}</span>`).join("")}</div>` : ""}
+      ${v.smak ? `<p>${esc(v.smak)}</p>` : ""}${klockor}
+      ${v.anvandning ? `<p class="dim">${esc(v.anvandning)}</p>` : ""}
+      <p><b>${v.antal}</b> ${v.antal === 1 ? "flaska" : "flaskor"} i ${esc(v.plats)}</p>
+      <div class="rad"><button class="knapp" onclick="drackDialog('${v.id}')">Vi drack en flaska</button><button class="knapp sek" onclick="omdomeDialog('${v.id}')">Ge omdöme</button></div>
+      <h2>Omdömen ${v.snittbetyg ? `<span class="dim">snitt ${v.snittbetyg}</span>` : ""}</h2>
+      ${v.omdomen.length ? v.omdomen.map(o => `<div class="kort">${stjarnor(o.betyg)} <span class="dim">${esc(o.datum)}${o.mat ? " · till " + esc(o.mat) : ""}</span>${o.kommentar ? `<div>${esc(o.kommentar)}</div>` : ""}</div>`).join("") : '<p class="dim">Inga omdömen än.</p>'}`);
+  } catch (e) { oppna(`<p class="fel">${esc(e.message)}</p>`); }
+}
+
+function betygsFalt() {
+  return `<label class="falt">Betyg</label><div class="stjarnor" id="stjarnor">${[1,2,3,4,5].map(n => `<button data-b="${n}" aria-label="${n} av 5">★</button>`).join("")}</div>
+    <label class="falt">Vad åt ni till?</label><input id="mat" placeholder="t.ex. lammstek">
+    <label class="falt">Kommentar</label><textarea id="kommentar" placeholder="Hur var det?"></textarea>`;
+}
+function kopplaStjarnor() {
+  let betyg = 0;
+  document.querySelectorAll("#stjarnor button").forEach(b => b.onclick = () => {
+    betyg = +b.dataset.b; document.querySelectorAll("#stjarnor button").forEach(x => x.classList.toggle("pa", +x.dataset.b <= betyg));
+  });
+  return () => betyg;
+}
+
+function drackDialog(id) {
+  const v = state.viner.find(x => x.id === id);
+  oppna(`<h2>Vi drack en flaska</h2><p class="dim">${esc(v ? v.visningsnamn : "")}</p>${betygsFalt()}<p class="dim">Betyget är frivilligt.</p>
+    <button class="knapp" id="ok">Spara</button>`);
+  const betyg = kopplaStjarnor();
+  $("#ok").onclick = async () => {
+    const body = {mat: $("#mat").value.trim(), kommentar: $("#kommentar").value.trim()};
+    if (betyg()) body.betyg = betyg();
+    try { await api(`/viner/${id}/drack`, {method: "POST", json: body}); stang(); toast("Skål! Sparat."); kallaren(); }
+    catch (e) { toast(e.message); }
+  };
+}
+
+function omdomeDialog(id) {
+  oppna(`<h2>Ge omdöme</h2>${betygsFalt()}<button class="knapp" id="ok">Spara omdöme</button>`);
+  const betyg = kopplaStjarnor();
+  $("#ok").onclick = async () => {
+    if (!betyg()) { toast("Välj ett betyg"); return; }
+    try { await api(`/viner/${id}/omdome`, {method: "POST", json: {betyg: betyg(), mat: $("#mat").value.trim(), kommentar: $("#kommentar").value.trim()}});
+          toast("Omdömet sparat"); visaVin(id); }
+    catch (e) { toast(e.message); }
+  };
+}
+
+// ── Lägg till ──────────────────────────────────────────────────────────────
+function laggTill() {
+  visa(`<div class="kort"><h2 style="margin-top:0">Skanna etiketten</h2>
+      <p class="dim">Fotografera framsidan av flaskan, så läser vi av etiketten och letar upp vinet hos Systembolaget.</p>
+      <input id="foto" type="file" accept="image/*" capture="environment" class="dold">
+      <button class="knapp" id="ta-foto">Fotografera etiketten</button></div>
+    <div id="resultat"></div>
+    <div class="kort"><h2 style="margin-top:0">Eller sök</h2>
+      <div class="sok"><input id="katalogsok" type="search" placeholder="Producent och namn"></div><div id="sokresultat"></div></div>`);
+  $("#ta-foto").onclick = () => $("#foto").click();
+  $("#foto").onchange = e => e.target.files[0] && skanna(e.target.files[0]);
+  let timer;
+  $("#katalogsok").oninput = e => { clearTimeout(timer); const q = e.target.value.trim(); timer = setTimeout(() => sokKatalog(q), 350); };
+}
+
+async function krympBild(fil, max = 1400) {
+  const bild = await createImageBitmap(fil);
+  const skala = Math.min(1, max / Math.max(bild.width, bild.height));
+  const c = document.createElement("canvas"); c.width = Math.round(bild.width * skala); c.height = Math.round(bild.height * skala);
+  c.getContext("2d").drawImage(bild, 0, 0, c.width, c.height);
+  return await new Promise(res => c.toBlob(res, "image/jpeg", 0.85));
+}
+
+async function skanna(fil) {
+  const knapp = $("#ta-foto"); knapp.disabled = true; knapp.innerHTML = `<span class="laddar"></span> Läser etiketten …`;
+  try {
+    const blob = await krympBild(fil);
+    const form = new FormData(); form.append("bild", blob, "etikett.jpg");
+    const d = await api("/skanna", {method: "POST", body: form});
+    visaKandidater(d, URL.createObjectURL(blob));
+  } catch (e) { $("#resultat").innerHTML = `<div class="kort fel">${esc(e.message)}</div>`; }
+  finally { knapp.disabled = false; knapp.textContent = "Fotografera igen"; }
+}
+
+function kandidatHtml(k) {
+  return `<div class="kandidat" data-art="${esc(k.artikelnr)}">${k.bild_url ? `<img src="${esc(k.bild_url)}" alt="" loading="lazy">` : ""}
+    <div><b>${esc([k.namn, k.namn2].filter(Boolean).join(" "))}</b> ${k.argang ? esc(k.argang) : ""}
+    <div class="dim">${esc([k.producent, k.region || k.land, k.pris ? Math.round(k.pris) + " kr" : ""].filter(Boolean).join(" · "))}</div></div></div>`;
+}
+
+function visaKandidater(d, bildUrl) {
+  const e = d.etikett || {};
+  const last = [e.producent, e.namn, e.argang].filter(Boolean).join(" ");
+  $("#resultat").innerHTML = `<div class="kort"><img class="etikett" src="${bildUrl}" alt="">
+    <p>${e.ar_vin ? `Jag läser: <b>${esc(last || "okänt vin")}</b> <span class="dim">(${esc([e.typ, e.region, e.land].filter(Boolean).join(", "))})</span>` : '<span class="fel">Det ser inte ut som en vinetikett.</span>'}</p>
+    ${d.kandidater.length ? `<p class="dim">Välj rätt vin hos Systembolaget:</p>${d.kandidater.map(kandidatHtml).join("")}` : '<p class="dim">Hittade inget matchande vin hos Systembolaget.</p>'}
+    <div class="kandidat" data-art=""><div><b>Inget av dessa</b><div class="dim">Lägg in vinet med det som stod på etiketten</div></div></div>
+    <label class="falt">Årgång</label><input id="argang" inputmode="numeric" value="${esc(e.argang || "")}">
+    <label class="falt">Antal flaskor</label><div class="antal"><button class="rund" id="min">−</button><b id="antal">1</b><button class="rund" id="plus">+</button></div>
+    <p><button class="knapp" id="spara" disabled>Lägg i källaren</button></p></div>`;
+  kopplaVal(d.etikett_bild, e);
+}
+
+function kopplaVal(bild, etikett) {
+  let vald = null, antal = 1;
+  document.querySelectorAll("#resultat .kandidat").forEach(el => el.onclick = () => {
+    document.querySelectorAll("#resultat .kandidat").forEach(x => x.classList.remove("vald")); el.classList.add("vald");
+    vald = el.dataset.art; $("#spara").disabled = false;
+  });
+  $("#min").onclick = () => { antal = Math.max(1, antal - 1); $("#antal").textContent = antal; };
+  $("#plus").onclick = () => { antal += 1; $("#antal").textContent = antal; };
+  $("#spara").onclick = async () => {
+    const body = {antal, argang: $("#argang").value.trim(), etikett_bild: bild || undefined};
+    if (vald) body.artikelnr = vald;
+    else Object.assign(body, {namn: etikett.namn || etikett.sokfras || "Okänt vin", producent: etikett.producent, typ: etikett.typ !== "Annat" ? etikett.typ : null,
+                              land: etikett.land, region: etikett.region, druvor: etikett.druvor});
+    try { const v = await api("/viner", {method: "POST", json: body}); toast(`${v.visningsnamn}: ${v.antal} i källaren`); gaTill("kallaren"); }
+    catch (e) { toast(e.message); }
+  };
+}
+
+async function sokKatalog(q) {
+  if (q.length < 3) { $("#sokresultat").innerHTML = ""; return; }
+  try {
+    const d = await api(`/katalog/sok?q=${encodeURIComponent(q)}&antal=10`);
+    $("#sokresultat").innerHTML = d.traffar.length ? d.traffar.map(kandidatHtml).join("") : '<p class="dim">Inga träffar.</p>';
+    document.querySelectorAll("#sokresultat .kandidat").forEach(el => el.onclick = () => {
+      const k = d.traffar.find(t => t.artikelnr === el.dataset.art);
+      $("#resultat").innerHTML = "";
+      visaKandidater({etikett: {ar_vin: true, producent: k.producent, namn: k.namn, argang: k.argang, typ: k.typ, land: k.land, region: k.region}, kandidater: [k]}, k.bild_url || "");
+      document.querySelector("#resultat .kandidat").click();
+      window.scrollTo({top: 0, behavior: "smooth"});
+    });
+  } catch (e) { $("#sokresultat").innerHTML = `<p class="fel">${esc(e.message)}</p>`; }
+}
+
+// ── Tips ───────────────────────────────────────────────────────────────────
+async function tips() {
+  visa(`<div class="kort"><h2 style="margin-top:0">Vad ska vi dricka till maten?</h2>
+      <div class="sok"><input id="mat" placeholder="t.ex. älgstek med kantareller"><button class="knapp" style="width:auto" id="fraga">Fråga</button></div>
+      <div id="matsvar"></div></div>
+    <div class="kort"><h2 style="margin-top:0">Vad ska vi köpa?</h2>
+      <div class="rad"><select id="kop-typ"><option value="">Alla typer</option>${TYPER.map(t => `<option>${t}</option>`).join("")}</select>
+      <input id="kop-pris" inputmode="numeric" placeholder="Maxpris kr"></div>
+      <p><button class="knapp sek" id="kop">Ge köptips</button></p><div id="kopsvar"></div></div>
+    <div class="kort" id="profil"><p class="tom"><span class="laddar"></span></p></div>`);
+  $("#fraga").onclick = async () => {
+    const mat = $("#mat").value.trim(); if (!mat) return;
+    $("#matsvar").innerHTML = '<p><span class="laddar"></span></p>';
+    try {
+      const d = await api(`/forslag/mat?mat=${encodeURIComponent(mat)}`);
+      $("#matsvar").innerHTML = (d.notering ? `<p class="dim">${esc(d.notering)}</p>` : "") + (d.forslag.length ? d.forslag.map(f =>
+        `<div class="kort vin" data-id="${f.id}"><div class="info"><div class="namn">${esc(f.visningsnamn)}</div><div class="dim">${esc([f.typ, f.region || f.land].filter(Boolean).join(" · "))} · ${f.antal} st</div>
+         <ul class="skal">${f.skal.map(s => `<li>${esc(s)}</li>`).join("")}</ul></div></div>`).join("") : `<p class="dim">${esc(d.meddelande || "Inget passande i källaren.")}</p>`);
+      document.querySelectorAll("#matsvar [data-id]").forEach(el => el.onclick = () => visaVin(el.dataset.id));
+    } catch (e) { $("#matsvar").innerHTML = `<p class="fel">${esc(e.message)}</p>`; }
+  };
+  $("#kop").onclick = async () => {
+    const p = new URLSearchParams(); if ($("#kop-typ").value) p.set("typ", $("#kop-typ").value);
+    const pris = parseInt($("#kop-pris").value, 10); if (pris > 0) p.set("max_pris", pris);
+    $("#kopsvar").innerHTML = '<p><span class="laddar"></span></p>';
+    try {
+      const d = await api(`/forslag/kop?${p}`);
+      $("#kopsvar").innerHTML = `<p class="dim">Utifrån ${esc(d.underlag)}.</p>` + d.forslag.map(f => `<div class="kort"><b>${esc([f.namn, f.namn2].filter(Boolean).join(" "))}</b> ${esc(f.argang || "")}
+        <div class="dim">${esc([f.typ, f.region || f.land, f.pris ? Math.round(f.pris) + " kr" : "", "nr " + f.artikelnr].filter(Boolean).join(" · "))}</div>
+        <ul class="skal">${f.skal.map(s => `<li>${esc(s)}</li>`).join("")}</ul></div>`).join("");
+    } catch (e) { $("#kopsvar").innerHTML = `<p class="fel">${esc(e.message)}</p>`; }
+  };
+  try {
+    const p = await api("/profil");
+    const lista = (rubrik, xs) => xs && xs.length ? `<p><b>${rubrik}:</b> ${esc(xs.join(", "))}</p>` : "";
+    $("#profil").innerHTML = `<h2 style="margin-top:0">Vår smak</h2><p class="dim">Bygger på ${esc(p.underlag)} (${p.antal_omdomen} omdömen).</p>
+      ${lista("Druvor vi gillar", p.gillar.druvor)}${lista("Regioner", p.gillar.regioner)}${lista("Mindre förtjusta i", p.gillar_inte.druvor)}
+      ${p.favoriter.length ? `<p><b>Favoriter:</b></p>${p.favoriter.map(f => `<div>${stjarnor(f.snittbetyg)} ${esc(f.vin)}</div>`).join("")}` : ""}`;
+  } catch (e) { $("#profil").innerHTML = `<p class="fel">${esc(e.message)}</p>`; }
+}
+
+function gaTill(vy) {
+  state.vy = vy;
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("aktiv", b.dataset.vy === vy));
+  if (!kod) return fragaKod(false);
+  ({kallaren, lagg: laggTill, tips})[vy]();
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => gaTill(b.dataset.vy));
+$("#dialog").addEventListener("click", e => { if (e.target.id === "dialog") stang(); });
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+gaTill("kallaren");
+</script>
+</body>
+</html>
