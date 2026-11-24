@@ -191,6 +191,15 @@ async def sok(q: str, argang: str | None = None, antal: int = 8) -> list[dict]:
     return rows
 
 
+async def basta_traff(fras: str) -> dict | None:
+    """The assortment wine a spoken or typed phrase clearly means, or None when no hit is good and unambiguous."""
+    traffar = await sok(fras, None, 3)
+    if traffar and traffar[0]["likhet"] >= 0.6 and (len(traffar) == 1 or traffar[0]["likhet"] - traffar[1]["likhet"] >= 0.1
+                                                     or traffar[0]["namn"] == traffar[1]["namn"]):
+        return traffar[0]
+    return None
+
+
 async def produkt(artikelnr: str) -> dict | None:
     rows = await db.select("produkter", {"artikelnr": f"eq.{artikelnr}", "limit": "1"})
     return rows[0] if rows else None

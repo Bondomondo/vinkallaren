@@ -186,10 +186,9 @@ async def hitta_eller_skapa(fras: str) -> tuple[dict, str | None]:
     except HTTPException as exc:
         if exc.status_code != 404:
             raise
-    traffar = await katalog.sok(fras, None, 3)
-    if traffar and traffar[0]["likhet"] >= 0.6 and (len(traffar) == 1 or traffar[0]["likhet"] - traffar[1]["likhet"] >= 0.1
-                                                     or traffar[0]["namn"] == traffar[1]["namn"]):
-        v = await lagg_till({"artikelnr": traffar[0]["artikelnr"], "antal": 0})
+    traff = await katalog.basta_traff(fras)
+    if traff:
+        v = await lagg_till({"artikelnr": traff["artikelnr"], "antal": 0})
         return v, "Systembolaget"
     v = await lagg_till({"namn": " ".join(fras.split())[:120], "antal": 0})
     return v, "manuellt"

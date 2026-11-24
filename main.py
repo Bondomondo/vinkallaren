@@ -9,7 +9,7 @@ from pathlib import Path
 from fastapi import Body, Depends, FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, Response
 
-from vinkallaren import auth, config, db, etikett, forslag, kallare, katalog, profil
+from vinkallaren import auth, config, db, etikett, forslag, inkop, kallare, katalog, profil
 
 app = FastAPI(title="Vinkällaren", version="1.0.0")
 STATIC = Path(__file__).parent / "static"
@@ -97,6 +97,51 @@ async def post_omdome_fras(body: dict = Body(...), kalla: str = Depends(auth.kal
     if nytt:
         out["nytt_vin"] = f"Fanns inte i källaren; lades till (0 flaskor) från {nytt}"
     return out
+
+
+# ── Inköpslistan ───────────────────────────────────────────────────────────
+@app.get("/api/v1/inkop")
+async def get_inkop(alla: bool = Query(False, description="true = även avbockade"), _: str = Depends(auth.kalla)):
+    """Inköpslistan: viner att köpa med antal, pris och uppskattad summa."""
+    return await inkop.lista(alla=alla)
+
+
+@app.post("/api/v1/inkop")
+async def post_inkop(body: dict = Body(...), kalla: str = Depends(auth.kalla)):
+    """Lägg till: {"artikelnr": "...", "antal": 2} ur sortimentet, {"namn": "..."} för hand, eller {"vin": "ripasso från angelini"}
+    som matchas mot sortimentet. Samma vin igen ökar antalet."""
+    return await inkop.lagg_till(body, kalla)
+
+
+@app.patch("/api/v1/inkop/{rad_id}")
+async def patch_inkop(rad_id: uuid.UUID, body: dict = Body(...), _: str = Depends(auth.kalla)):
+    return await inkop.andra(str(rad_id), body)
+
+
+@app.delete("/api/v1/inkop/{rad_id}")
+async def delete_inkop(rad_id: uuid.UUID, _: str = Depends(auth.kalla)):
+    return await inkop.ta_bort(str(rad_id))
+
+
+@app.post("/api/v1/inkop/{rad_id}/kopt")
+async def post_inkop_kopt(rad_id: uuid.UUID, body: dict | None = Body(None), _: str = Depends(auth.kalla)):
+    """Bocka av som köpt; flaskorna läggs i vinkylen om inte {"till_kallaren": false}. {"antal": n, "argang": "..."} valfritt."""
+    return await inkop.kopt(str(rad_id), body or {})
+
+
+# For the voice agent: name the wine in words.
+@app.post("/api/v1/inkop/kopt")
+async def post_inkop_kopt_fras(body: dict = Body(...), _: str = Depends(auth.kalla)):
+    """{"vin": "ripasson", "antal": 2, "till_kallaren": true} – bocka av ett vin på listan med ord."""
+    r = await inkop.hitta(str(body.get("vin") or ""))
+    return await inkop.kopt(r["id"], body)
+
+
+@app.post("/api/v1/inkop/ta-bort")
+async def post_inkop_ta_bort_fras(body: dict = Body(...), _: str = Depends(auth.kalla)):
+    """{"vin": "..."} – ta bort ett vin från listan med ord."""
+    r = await inkop.hitta(str(body.get("vin") or ""))
+    return await inkop.ta_bort(r["id"])
 
 
 # ── Sortimentet och etiketter ──────────────────────────────────────────────

@@ -8,9 +8,9 @@ Jean-Pierre (ElevenLabs) använder samma data via agent-tools.
 
 | Del | Var | Vad |
 |---|---|---|
-| Appen | `static/index.html` | Installerbar webbapp (lägg till på hemskärmen). Källaren, Lägg till (skanna/sök), Tips |
+| Appen | `static/index.html` | Installerbar webbapp (lägg till på hemskärmen). Källaren, Lägg till (skanna/sök), Inköp, Tips |
 | API | `main.py`, `vinkallaren/` | FastAPI på Vercel, `/api/v1/...` |
-| Databas | Supabase-projektet `vinkallaren` | `produkter` (Systembolagets vinsortiment), `viner` (våra viner med antal), `omdomen`, `synk`; bucket `etiketter` |
+| Databas | Supabase-projektet `vinkallaren` | `produkter` (Systembolagets vinsortiment), `viner` (våra viner med antal), `omdomen`, `inkopslista`, `synk`; bucket `etiketter` |
 | Etikettläsning | `vinkallaren/etikett.py` | Claude läser fotot (producent, namn, årgång, druvor ...) och vinet matchas mot sortimentet |
 | Förslag | `vinkallaren/forslag.py`, `profil.py` | Systembolagets "passar till" + familjens smakprofil ur betygen |
 
@@ -32,6 +32,11 @@ Alla anrop kräver `X-Familj-Kod` (appen) eller `X-Api-Key` (agent-tools). Synke
 | `POST /api/v1/viner/{id}/omdome` | Omdöme 1–5 |
 | `POST /api/v1/drack`, `POST /api/v1/omdome` | Samma sak med vinet i ord (`{"vin": "barolon från 2016", ...}`), för röstagenten |
 | `POST /api/v1/skanna` | Foto av etiketten (multipart `bild`) → avläsning och kandidater i sortimentet |
+| `GET /api/v1/inkop?alla=` | Inköpslistan med antal, pris och uppskattad summa |
+| `POST /api/v1/inkop` | Lägg på listan: `{"artikelnr", "antal"}`, `{"namn", ...}` eller `{"vin": "fras"}` (matchas mot sortimentet). Samma vin igen ökar antalet |
+| `PATCH /api/v1/inkop/{id}`, `DELETE /api/v1/inkop/{id}` | Ändra antal/anteckning, ta bort |
+| `POST /api/v1/inkop/{id}/kopt` | Bocka av som köpt; flaskorna läggs i vinkylen om inte `{"till_kallaren": false}` |
+| `POST /api/v1/inkop/kopt`, `POST /api/v1/inkop/ta-bort` | Samma sak med vinet i ord (`{"vin": "ripasson"}`), för röstagenten |
 | `GET /api/v1/katalog/sok?q=&argang=` | Sök i sortimentet |
 | `GET /api/v1/forslag/mat?mat=&kategorier=` | Vin ur källaren till en rätt, med skäl |
 | `GET /api/v1/forslag/kop?mat=&typ=&max_pris=&bestallningsvaror=` | Köptips ur sortimentet efter vår smak |

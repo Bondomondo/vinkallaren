@@ -14,7 +14,7 @@ CRON = "cron-test"
 
 class FakeDB:
     def __init__(self):
-        self.t = {"produkter": [], "viner": [], "omdomen": [], "synk": []}
+        self.t = {"produkter": [], "viner": [], "omdomen": [], "synk": [], "inkopslista": []}
         self.uploads = {}
 
     @staticmethod
@@ -22,6 +22,8 @@ class FakeDB:
         v = row.get(key)
         op, _, arg = cond.partition(".")
         if op == "eq":
+            if isinstance(v, bool):
+                return str(v).lower() == arg
             return str(v) == arg if v is not None else False
         if op == "gt":
             return v is not None and float(v) > float(arg)
@@ -83,6 +85,9 @@ class FakeDB:
             if table == "viner":
                 for k, d in (("druvor", []), ("passar_till", []), ("antal", 0), ("plats", "vinkylen"), ("skapad", "2026-11-23T10:00:00+01:00")):
                     r.setdefault(k, d)
+            if table == "inkopslista":
+                r.setdefault("kopt", False)
+                r.setdefault("skapad", f"2026-11-24T10:00:{len(self.t['inkopslista']):02d}+01:00")
             if table == "omdomen":
                 r.setdefault("datum", date.today().isoformat())
                 r.setdefault("skapad", f"2026-11-23T10:00:{len(self.t['omdomen']):02d}+01:00")
@@ -96,6 +101,10 @@ class FakeDB:
             r.update(values)
             out.append(copy.deepcopy(r))
         return out
+
+    async def delete(self, table, match):
+        doomed = self._filter(self.t[table], match)
+        self.t[table] = [r for r in self.t[table] if r not in doomed]
 
     async def rpc(self, fn, args):
         assert fn == "sok_produkter"
@@ -122,7 +131,7 @@ class FakeDB:
 def fake(monkeypatch):
     from vinkallaren import db
     f = FakeDB()
-    for name in ("select", "insert", "update", "rpc", "upload", "signed_urls"):
+    for name in ("select", "insert", "update", "delete", "rpc", "upload", "signed_urls"):
         monkeypatch.setattr(db, name, getattr(f, name))
     monkeypatch.setattr(db, "configured", lambda: True)
     return f

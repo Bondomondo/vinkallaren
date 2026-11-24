@@ -64,6 +64,10 @@ async def update(table: str, match: dict, values: dict) -> list[dict]:
     return await rest("PATCH", table, params=match, json=values, prefer="return=representation") or []
 
 
+async def delete(table: str, match: dict) -> None:
+    await rest("DELETE", table, params=match)
+
+
 async def rpc(fn: str, args: dict) -> Any:
     return await rest("POST", f"rpc/{fn}", json=args)
 
